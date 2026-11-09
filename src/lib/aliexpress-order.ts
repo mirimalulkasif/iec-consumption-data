@@ -29,18 +29,24 @@ export const buyThisNow = [
   {
     id: "esp32",
     rank: 2,
-    name: "ESP32-DevKitC-32 USB‑C (classic ESP32)",
-    priceNote: "Often ~$2 on Choice / Dollar Express deals",
-    url: "https://www.aliexpress.com/w/wholesale-ESP32-TYPE-C-CH340C-DevKitC-32.html?SortType=price_asc&shipToCountry=IL",
-    directUrl: "https://www.aliexpress.com/i/1005010188815887.html",
+    name: "ESP32-DevKitC-32 USB‑C — 38‑pin only",
+    priceNote: "Usually a few dollars; title must say 38PIN / 38PINS",
+    url: "https://www.aliexpress.com/item/1005005398604818.html",
+    directUrl: "https://www.aliexpress.com/item/1005006826620736.html",
     select: [
-      "Board: ESP32-DevKitC-32 / ESP-WROOM-32 (dual-core classic ESP32).",
-      "USB: Type-C.",
-      "Pins: 38-pin if offered (not 30-pin).",
-      "Chip driver: CH340C or CP2102 — either is fine.",
-      "Do not pick ESP32-C3 / S2 / S3 / SuperMini.",
+      "Preferred link title already includes “38PINS”.",
+      "On the backup listing (30/38 mixed): open Color/SKU and pick exactly “38pin” — CP2102 38pin or CH340 38pin. Never 30pin.",
+      "USB: Type-C (or Type-C/Micro dual — fine).",
+      "Module: ESP-WROOM-32 / DevKitC-32 classic ESP32.",
+      "Do not pick ESP32-C3 / S2 / S3 / SuperMini / CAM.",
+      "Photo check: two long rows of pins (19+19 = 38), not the shorter 30-pin NodeMCU style.",
     ],
-    reject: ["ESP32-CAM", "ESP32-C3 SuperMini", "Bare ESP-WROOM module without the DevKit board"],
+    reject: [
+      "Any SKU labeled 30pin",
+      "ESP32-CAM",
+      "ESP32-C3 SuperMini",
+      "Bare ESP-WROOM module without the DevKit board",
+    ],
   },
   {
     id: "dupont",
@@ -66,8 +72,9 @@ export const aliexpressOrder: OrderItem[] = [
     must: "Classic ESP32 / ESP32-WROOM DevKitC with exposed GPIO12–15 and GPIO5. USB‑C is fine.",
     searchUrl:
       "https://www.aliexpress.com/w/wholesale-ESP32-DevKitC-38PIN-Type-C.html?shipToCountry=IL",
-    exampleUrl: "https://www.aliexpress.com/i/1005010188815887.html",
-    avoid: "Do not buy ESP32‑C3 / S2 / S3 mini boards unless you are ready to remap pins — stick to the common 38‑pin DevKitC for the Dialog3g wiring table.",
+    exampleUrl: "https://www.aliexpress.com/item/1005005398604818.html",
+    avoid:
+      "Skip 30-pin NodeMCU-style boards and ESP32‑C3 / S2 / S3 minis. Use a listing that says 38PIN, or a mixed listing where you explicitly choose the 38pin SKU.",
   },
   {
     id: "si4432",
