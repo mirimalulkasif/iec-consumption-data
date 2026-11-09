@@ -2,6 +2,7 @@ import { SerialConverter } from "@/components/serial-converter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  frequencyVerifyNotes,
   fromMeterPaths,
   hardwareOptions,
   outdoorPowerNotes,
@@ -107,6 +108,26 @@ export function FromTheMeter() {
               is local — walls and metal pits cut it down.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div id="frequency" className="scroll-mt-24 space-y-5 rounded-2xl border border-border/70 bg-white/70 p-6 backdrop-blur">
+        <div className="max-w-3xl">
+          <h3 className="font-display text-2xl text-[hsl(var(--water-deep))]">
+            Are we sure about 916.3 MHz?
+          </h3>
+          <p className="mt-2 text-muted-foreground">
+            For classic Israeli Dialog3G, yes — but you verify the meter model,
+            not a MHz number on the dial.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {frequencyVerifyNotes.map((note) => (
+            <article key={note.title} className="rounded-xl bg-[hsl(var(--water-foam))]/80 p-4">
+              <h4 className="font-medium text-[hsl(var(--water-deep))]">{note.title}</h4>
+              <p className="mt-2 text-sm text-muted-foreground">{note.body}</p>
+            </article>
+          ))}
         </div>
       </div>
 

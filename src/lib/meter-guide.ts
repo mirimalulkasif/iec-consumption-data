@@ -99,12 +99,32 @@ export const outdoorPowerNotes = [
 ];
 
 export const rfFacts = [
-  { label: "Frequency (Israel)", value: "916.3 MHz" },
+  { label: "Frequency (Israel Dialog3G)", value: "916.3 MHz" },
+  { label: "Printed on the dial?", value: "Usually no — verify model + serial" },
   { label: "Modulation", value: "FSK + Manchester" },
   { label: "How often", value: "~every 30 seconds" },
   { label: "What is in the packet", value: "Meter ID + consumption" },
   { label: "Utility portal needed?", value: "No" },
   { label: "Typical resolution", value: "0.1 m³ (100 L) in Israel" },
+];
+
+export const frequencyVerifyNotes = [
+  {
+    title: "Why we say 916.3 MHz",
+    body: "Arad’s own Israel Dialog3G concentrator docs list IL/WB = 916.3 MHz FSK, and Israeli reverse‑engineering projects (rtl_433 / Dialog3g-Decoder) decode residential meters there. Europe often uses ~868 MHz instead.",
+  },
+  {
+    title: "Will 916.3 appear on the meter?",
+    body: "Usually not on the glass dial. Look for Arad branding, a numeric serial, and Dialog / Dialog3G style markings. The MHz is a radio setting inside the AMI module, not a consumer readout.",
+  },
+  {
+    title: "What to photograph before ordering",
+    body: "Whole face + any side/lid sticker. Confirm it looks like the older round Dialog3G family. Newer rectangular blue/black smart meters (common since ~2022) may use a different radio and this SI4432 recipe may not apply.",
+  },
+  {
+    title: "Why the wideband SI4432 is still safe",
+    body: "A 240–930 MHz SI4432 is tuned in software. You set 916.3 MHz for Israel Dialog3G; the same hardware can try 868 MHz if you ever need to. Fixed 433 MHz-only boards cannot.",
+  },
 ];
 
 export function decimalSerialToHex(raw: string): {
