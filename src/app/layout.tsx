@@ -15,7 +15,7 @@ const body = Figtree({
 export const metadata: Metadata = {
   title: "Arad Meter Access",
   description:
-    "How to read an Arad water meter in Israel: Read Your Meter Pro cloud access, utility enablement, and local Dialog3G RF options — with a live/mock dashboard.",
+    "When the water company blocks Arad’s website, read the meter itself: dial reading and local Dialog3G RF (916.3 MHz), plus optional RYM Pro if access is enabled.",
 };
 
 export default function RootLayout({

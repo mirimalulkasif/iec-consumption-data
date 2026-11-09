@@ -7,29 +7,39 @@ export function AccessPaths() {
     <section id="paths" className="scroll-mt-24 space-y-8">
       <div className="max-w-2xl">
         <p className="text-sm font-medium uppercase tracking-[0.18em] text-[hsl(var(--water-mid))]">
-          How to get the data
+          Cloud / utility side doors
         </p>
         <h2 className="mt-2 font-display text-3xl tracking-tight text-[hsl(var(--water-deep))] sm:text-4xl">
-          Three practical doors into an Arad meter
+          Portal access is optional — and often off
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Owning the meter is not enough by itself — readings live either in the
-          utility’s Arad cloud, or in short RF bursts from the meter. Pick the
-          path that matches what you have today.
+          These paths need the water company. If they already told you Arad data
+          is not enabled, treat this section as optional and stay with{" "}
+          <a href="#from-meter" className="underline underline-offset-2">
+            From the meter
+          </a>
+          .
         </p>
       </div>
 
       <div className="space-y-10">
         {accessSteps.map((path, index) => (
-          <article key={path.id} className="grid gap-5 border-t border-border/70 pt-8 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <article
+            key={path.id}
+            className="grid gap-5 border-t border-border/70 pt-8 lg:grid-cols-[220px_minmax(0,1fr)]"
+          >
             <div>
               <Badge variant="outline" className="mb-3">
-                Path {index + 1}
+                Side door {index + 1}
               </Badge>
               <h3 className="font-display text-2xl text-[hsl(var(--water-deep))]">
                 {path.title}
               </h3>
-              <p className="mt-2 text-sm text-[hsl(var(--water-mid))]" dir="rtl" lang="he">
+              <p
+                className="mt-2 text-sm text-[hsl(var(--water-mid))]"
+                dir="rtl"
+                lang="he"
+              >
                 {path.hebrew}
               </p>
             </div>

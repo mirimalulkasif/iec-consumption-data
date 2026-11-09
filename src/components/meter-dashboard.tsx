@@ -91,11 +91,16 @@ export function MeterDashboard() {
           Dashboard
         </p>
         <h2 className="mt-2 font-display text-3xl tracking-tight text-[hsl(var(--water-deep))] sm:text-4xl">
-          See what the meter already knows
+          Optional cloud dashboard
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Starts with realistic sample data. Connect with your Read Your Meter
-          Pro account to replace it with live Arad cloud readings.
+          Sample data so you can see the layout. The Connect form only works if
+          the utility later enables Read Your Meter Pro — it will not bypass a
+          blocked portal. For blocked accounts, use{" "}
+          <a href="#from-meter" className="underline underline-offset-2">
+            From the meter
+          </a>
+          .
         </p>
       </div>
 

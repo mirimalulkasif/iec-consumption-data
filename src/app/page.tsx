@@ -1,4 +1,5 @@
 import { AccessPaths } from "@/components/access-paths";
+import { FromTheMeter } from "@/components/from-the-meter";
 import { MeterDashboard } from "@/components/meter-dashboard";
 import { Button } from "@/components/ui/button";
 
@@ -24,11 +25,14 @@ export default function HomePage() {
           Arad Meter Access
         </p>
         <nav className="flex items-center gap-2 text-sm">
-          <a className="hidden text-muted-foreground hover:text-foreground sm:inline" href="#paths">
-            Paths
+          <a
+            className="hidden text-muted-foreground hover:text-foreground sm:inline"
+            href="#from-meter"
+          >
+            From the meter
           </a>
           <Button asChild size="sm" variant="secondary">
-            <a href="#dashboard">Open dashboard</a>
+            <a href="#from-meter">Local RF guide</a>
           </Button>
         </nav>
       </header>
@@ -36,48 +40,42 @@ export default function HomePage() {
       <section className="relative mx-auto grid min-h-[78vh] w-full max-w-6xl items-end px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-16">
         <div className="max-w-3xl">
           <p className="animate-rise text-sm font-medium uppercase tracking-[0.2em] text-[hsl(var(--water-mid))]">
-            Water · Israel · Arad
+            No portal? Still readable
           </p>
           <h1 className="animate-rise-delay mt-4 font-display text-5xl leading-[1.05] tracking-tight text-[hsl(var(--water-deep))] sm:text-6xl lg:text-7xl">
             Arad Meter Access
           </h1>
           <p className="animate-rise-late mt-5 max-w-xl text-lg text-foreground/80 sm:text-xl">
-            You already have the meter. Here is how to unlock its readings —
-            through Arad’s consumer cloud, your water corporation, or local RF —
-            and a dashboard that can pull them.
+            If the water company never enabled Arad’s website, you can still
+            read the dial on the meter — or catch the Dialog3G radio packets it
+            already broadcasts.
           </p>
           <div className="animate-rise-late mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <a href="#paths">Show me the paths</a>
+              <a href="#from-meter">Read it from the meter</a>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <a href="#dashboard">Try the dashboard</a>
+              <a href="#paths">Utility / portal notes</a>
             </Button>
           </div>
         </div>
       </section>
 
       <div className="relative mx-auto w-full max-w-6xl space-y-24 px-5 pb-24 sm:px-8">
+        <FromTheMeter />
         <AccessPaths />
         <MeterDashboard />
 
         <section className="border-t border-border/70 pt-10">
           <h2 className="font-display text-2xl text-[hsl(var(--water-deep))]">
-            What this app talks to
+            About the optional Connect form
           </h2>
           <p className="mt-3 max-w-3xl text-muted-foreground">
-            Live mode uses the same consumer Harmony / Read Your Meter Pro API
-            that Home Assistant’s{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">rympro</code>{" "}
-            integration uses (
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">
-              eu-customerportal-api.harmonyencoremdm.com
-            </code>
-            ). Optional secrets{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">RYM_EMAIL</code>{" "}
-            and{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">RYM_PASSWORD</code>{" "}
-            enable automatic live refresh without the form.
+            The dashboard’s Connect form only works when Read Your Meter Pro is
+            already enabled for your account. It cannot unlock a portal the
+            תאגיד turned off. For blocked accounts, use the serial converter and
+            RF kit list above — that path talks to the meter over the air, not
+            to Arad’s consumer website.
           </p>
         </section>
       </div>

@@ -6,7 +6,7 @@ export const mockMeterPayload: MeterPayload = {
   accountName: "Sample household",
   fetchedAt: new Date().toISOString(),
   message:
-    "Sample data so you can explore the dashboard. Connect with Read Your Meter Pro to load your real Arad meter.",
+    "Sample data only. If your utility blocked Read Your Meter Pro, use the From the meter section above (dial or local RF) — the Connect form cannot invent cloud access the company disabled.",
   meters: [
     {
       meterCount: 1,
@@ -33,60 +33,37 @@ export const mockMeterPayload: MeterPayload = {
 
 export const accessSteps = [
   {
-    id: "cloud",
-    title: "Read Your Meter Pro (recommended)",
-    hebrew: "קריאת מד המים – האפליקציה והפורטל של ארד",
+    id: "utility",
+    title: "Still worth asking the תאגיד",
+    hebrew: "פנייה לתאגיד המים",
     summary:
-      "If your water utility uses Arad, you can pull cloud readings without extra hardware.",
+      "Sometimes consumer access can be turned on later. It is optional on their side — if they refuse, stay on the meter-local path.",
     steps: [
-      "Find your water bill and note the payer / customer number and property number (מספר משלם / מספר נכס), or use the phone number linked to the account.",
-      "Register at rym-pro.com or install Read Your Meter Pro from the App Store / Google Play.",
-      "If registration fails, ask your water corporation whether they enable Arad consumer access for your address.",
-      "Once login works, use Connect below (or Home Assistant / Hubitat integrations) to pull last read, daily, monthly, and forecast data.",
+      "Ask whether Read Your Meter Pro / CityMind consumer access can be enabled for your account.",
+      "If they use a different MDM, ask which consumer app or export they offer instead.",
+      "Keep using dial reads or Dialog3G RF while you wait.",
     ],
-    support: "Arad support: 1-700-50-6565 · supportarad@arad.co.il",
+    support: "Billing stays with the utility. Arad app/tech support: 1-700-50-6565 · supportarad@arad.co.il",
     links: [
       { label: "rym-pro.com", href: "https://rym-pro.com/" },
       { label: "Arad consumer info", href: "https://info.arad.co.il/" },
     ],
   },
   {
-    id: "rf",
-    title: "Local RF (Dialog3G)",
-    hebrew: "קריאה מקומית בגלים – Dialog3G",
+    id: "cloud",
+    title: "Read Your Meter Pro (only if enabled)",
+    hebrew: "קריאת מד המים – רק אם התאגיד אישר",
     summary:
-      "Many Israeli Arad meters broadcast every ~30s on 916.3 MHz. You can decode your own meter ID locally.",
+      "This is the website/app path. It only works when the water company has turned it on for Arad customers. If signup fails, it is not a password problem — access was not provisioned.",
     steps: [
-      "Read the decimal serial printed on the meter face and convert it to hex (example: 5136830 → 0x4E61BE).",
-      "Use an RTL-SDR with rtl_433’s Arad/Master Meter Dialog3G decoder, or an ESP32 + SI4432/XL4432 receiver.",
-      "Tune to 916.3 MHz FSK / Manchester; validated open-source decoders publish the reading in m³.",
-      "This path needs no utility portal, but it does need radio hardware near the meter and only sees packets in range.",
+      "Register with the phone on the account, or מספר משלם + מספר נכס from the bill.",
+      "If login works, use Connect below or Home Assistant’s rympro integration.",
+      "If it fails, stop fighting the portal and use From the meter instead.",
     ],
-    support: "Useful projects: rtl_433 Dialog3G decoder · Dialog3g-Decoder (ESPHome)",
+    support: "Cloud login cannot bypass a utility that never enabled consumer access.",
     links: [
-      {
-        label: "Dialog3g-Decoder",
-        href: "https://github.com/assafms/Dialog3g-Decoder",
-      },
-      {
-        label: "rtl_433 Arad PR",
-        href: "https://github.com/merbanan/rtl_433/pull/2984",
-      },
+      { label: "rym-pro.com", href: "https://rym-pro.com/" },
     ],
-  },
-  {
-    id: "utility",
-    title: "Ask the water corporation",
-    hebrew: "פנייה לתאגיד המים",
-    summary:
-      "Billing and portal enablement are controlled by your תאגיד מים, not only by the physical meter brand.",
-    steps: [
-      "Confirm the meter is Arad (logo / model on the face).",
-      "Ask whether consumer Read Your Meter Pro / CityMind access is enabled for your account.",
-      "If the utility uses a different MDM, request their consumer app or export instead.",
-    ],
-    support: "Billing questions stay with the utility; Arad handles meter/app technical support.",
-    links: [],
   },
 ];
 
