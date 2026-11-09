@@ -9,6 +9,54 @@ export type OrderItem = {
   avoid?: string;
 };
 
+export const buyThisNow = [
+  {
+    id: "si4432",
+    rank: 1,
+    name: "Mini SI4432 240–930 MHz + spring antenna",
+    priceNote: "Often ~$1.50–$2 before shipping (cheapest matching radio)",
+    url: "https://www.aliexpress.com/i/3256808542346140.html",
+    select: [
+      "Color/SKU: choose the option that is 1 set = module + spring antenna (not bare chip, not “module only” if antenna is separate and more expensive).",
+      "Quantity: 1 is enough; 2 if you want a spare.",
+      "There is usually no 433/868/915 dropdown on this listing — that is correct. Wideband 240–930 is tuned in software to 916.3 MHz.",
+    ],
+    reject: [
+      "Anything titled only 433MHz / AS4432-SMD 433MHz",
+      "Bare SI4432 IC chips with no antenna module",
+    ],
+  },
+  {
+    id: "esp32",
+    rank: 2,
+    name: "ESP32-DevKitC-32 USB‑C (classic ESP32)",
+    priceNote: "Often ~$2 on Choice / Dollar Express deals",
+    url: "https://www.aliexpress.com/w/wholesale-ESP32-TYPE-C-CH340C-DevKitC-32.html?SortType=price_asc&shipToCountry=IL",
+    directUrl: "https://www.aliexpress.com/i/1005010188815887.html",
+    select: [
+      "Board: ESP32-DevKitC-32 / ESP-WROOM-32 (dual-core classic ESP32).",
+      "USB: Type-C.",
+      "Pins: 38-pin if offered (not 30-pin).",
+      "Chip driver: CH340C or CP2102 — either is fine.",
+      "Do not pick ESP32-C3 / S2 / S3 / SuperMini.",
+    ],
+    reject: ["ESP32-CAM", "ESP32-C3 SuperMini", "Bare ESP-WROOM module without the DevKit board"],
+  },
+  {
+    id: "dupont",
+    rank: 3,
+    name: "Dupont jumper wires",
+    priceNote: "Usually under $1 for a mixed pack",
+    url: "https://www.aliexpress.com/w/wholesale-40PCS-Dupont-line.html?SortType=price_asc&shipToCountry=IL",
+    select: [
+      "Pick a 40 pcs (or more) Dupont pack.",
+      "Prefer Female-to-Female, or a mixed pack that includes Female-Female.",
+      "10–20 cm length is fine.",
+    ],
+    reject: [],
+  },
+] as const;
+
 export const aliexpressOrder: OrderItem[] = [
   {
     id: "esp32",
@@ -18,7 +66,7 @@ export const aliexpressOrder: OrderItem[] = [
     must: "Classic ESP32 / ESP32-WROOM DevKitC with exposed GPIO12–15 and GPIO5. USB‑C is fine.",
     searchUrl:
       "https://www.aliexpress.com/w/wholesale-ESP32-DevKitC-38PIN-Type-C.html?shipToCountry=IL",
-    exampleUrl: "https://www.aliexpress.com/i/3256809753102180.html",
+    exampleUrl: "https://www.aliexpress.com/i/1005010188815887.html",
     avoid: "Do not buy ESP32‑C3 / S2 / S3 mini boards unless you are ready to remap pins — stick to the common 38‑pin DevKitC for the Dialog3g wiring table.",
   },
   {
@@ -28,7 +76,7 @@ export const aliexpressOrder: OrderItem[] = [
     qty: "1–2",
     must: 'Title/specs must say "240MHz-930MHz" (or similar wideband). The chip is SI4432 / XL4432.',
     searchUrl:
-      "https://www.aliexpress.com/w/wholesale-SI4432-240MHZ-930MHZ.html?shipToCountry=IL",
+      "https://www.aliexpress.com/w/wholesale-SI4432-240MHZ-930MHZ.html?SortType=price_asc&shipToCountry=IL",
     exampleUrl: "https://www.aliexpress.com/i/3256808542346140.html",
     avoid:
       "Do NOT buy modules labeled only 433MHz / 470MHz. Those will not tune Israel’s 916.3 MHz meters even though the chip name looks the same.",

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { aliexpressOrder, wiringReminder } from "@/lib/aliexpress-order";
+import { aliexpressOrder, buyThisNow, wiringReminder } from "@/lib/aliexpress-order";
 
 export function AliExpressCart() {
   return (
@@ -13,13 +13,63 @@ export function AliExpressCart() {
           What to order for the ESP32 + SI4432 setup
         </h2>
         <p className="mt-3 text-muted-foreground">
-          Set AliExpress ship-to Israel. The critical buy is a 240–930 MHz
-          SI4432 module — not a 433 MHz-only board. Links are search pages (more
-          stable than single listings) plus one example product where useful.
+          Set AliExpress ship-to Israel. Start with the three “buy this”
+          links below — cheapest matching picks — then follow the SKU notes
+          exactly.
         </p>
       </div>
 
+      <div className="space-y-4">
+        {buyThisNow.map((item) => (
+          <article
+            key={item.id}
+            className="rounded-2xl border border-[hsl(var(--water-mid))]/30 bg-[hsl(var(--water-foam))]/70 p-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <Badge className="mb-2">Buy #{item.rank}</Badge>
+                <h3 className="text-lg font-medium text-[hsl(var(--water-deep))]">
+                  {item.name}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">{item.priceNote}</p>
+              </div>
+              <Button asChild>
+                <a href={item.url} target="_blank" rel="noreferrer">
+                  Open cheapest match
+                </a>
+              </Button>
+            </div>
+            {"directUrl" in item && item.directUrl && (
+              <p className="mt-2 text-sm">
+                Direct listing backup:{" "}
+                <a
+                  className="underline underline-offset-2"
+                  href={item.directUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  open item
+                </a>
+              </p>
+            )}
+            <ol className="mt-3 list-decimal space-y-1 ps-5 text-sm text-muted-foreground">
+              {item.select.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            {item.reject.length > 0 && (
+              <p className="mt-3 text-sm text-destructive">
+                Skip: {item.reject.join(" · ")}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
+
       <div className="space-y-6">
+        <h3 className="font-display text-2xl text-[hsl(var(--water-deep))]">
+          Full kit (including optional later items)
+        </h3>
         {aliexpressOrder.map((item, index) => (
           <article
             key={item.id}
