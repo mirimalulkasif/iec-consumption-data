@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   fromMeterPaths,
   hardwareOptions,
+  outdoorPowerNotes,
   rfFacts,
 } from "@/lib/meter-guide";
 
@@ -106,6 +107,27 @@ export function FromTheMeter() {
               is local — walls and metal pits cut it down.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div id="outdoor-power" className="scroll-mt-24 space-y-5 rounded-2xl border border-border/70 bg-white/70 p-6 backdrop-blur">
+        <div className="max-w-3xl">
+          <h3 className="font-display text-2xl text-[hsl(var(--water-deep))]">
+            Outdoor meter, no electricity — still an option?
+          </h3>
+          <p className="mt-2 text-muted-foreground">
+            Yes, because the listener is yours, not the Arad. The hard parts are
+            radio range and how you power the ESP — not the lack of a socket at
+            the pit.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {outdoorPowerNotes.map((note) => (
+            <article key={note.title} className="rounded-xl bg-[hsl(var(--water-foam))]/80 p-4">
+              <h4 className="font-medium text-[hsl(var(--water-deep))]">{note.title}</h4>
+              <p className="mt-2 text-sm text-muted-foreground">{note.body}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

@@ -60,20 +60,41 @@ export const hardwareOptions: HardwareOption[] = [
     id: "esp",
     title: "ESP32 + SI4432 / XL4432",
     cost: "Dedicated always-on reader (often under DIY-hobby pricing)",
-    bestFor: "Home Assistant / ESPHome permanently mounted near the meter",
+    bestFor:
+      "A tiny Wi‑Fi board that listens for the meter’s radio — it is not wired into the Arad, and it does not use the meter’s power",
     parts: [
-      "ESP32 or ESP8266",
-      "SI4432 or XL4432 module",
-      "Optional small custom PCB from the Dialog3g-Decoder project",
+      "ESP32 (small Wi‑Fi microcontroller you power yourself)",
+      "SI4432 or XL4432 radio module tuned to hear 916.3 MHz",
+      "Optional small PCB from Dialog3g-Decoder to wire them cleanly",
+      "Your power plan: indoor USB, long cable, battery pack, or small solar — the outdoor meter has none",
     ],
     software:
-      "ESPHome custom component from Dialog3g-Decoder — set meter_id to your hex serial and publish the sensor to Home Assistant.",
+      "ESPHome custom component from Dialog3g-Decoder — set meter_id to your hex serial and publish the sensor to Home Assistant (or MQTT).",
     links: [
       {
         label: "Dialog3g-Decoder (ESPHome)",
         href: "https://github.com/assafms/Dialog3g-Decoder",
       },
     ],
+  },
+];
+
+export const outdoorPowerNotes = [
+  {
+    title: "It does not plug into the Arad",
+    body: "The ESP is a separate listener. The meter keeps running on its own sealed battery and only broadcasts radio packets. You never open or power the Arad device.",
+  },
+  {
+    title: "Prefer indoors if the signal reaches",
+    body: "First try the receiver inside — balcony, ground-floor window, stairwell, or utility room facing the meter pit. Many people receive Dialog3G from tens of meters away if the path is not blocked by thick concrete or a deep metal lid.",
+  },
+  {
+    title: "If you must sit near the pit",
+    body: "Use a weatherproof box + USB power bank (swap/recharge), a long low-voltage cable from the house, or a small solar + battery kit. The ESP needs continuous power for always-on reading; the meter does not supply it.",
+  },
+  {
+    title: "Wi‑Fi is the second constraint",
+    body: "An ESP32 usually sends readings over your home Wi‑Fi. If the pit is far from coverage, either move the receiver closer to the house (if RF still works) or use a board with better outdoor link options — but start by testing range with a temporary USB power bank.",
   },
 ];
 
