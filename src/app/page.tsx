@@ -1,4 +1,5 @@
 import { AccessPaths } from "@/components/access-paths";
+import { AliExpressCart } from "@/components/aliexpress-cart";
 import { FromTheMeter } from "@/components/from-the-meter";
 import { MeterDashboard } from "@/components/meter-dashboard";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export default function HomePage() {
             From the meter
           </a>
           <Button asChild size="sm" variant="secondary">
-            <a href="#from-meter">Local RF guide</a>
+            <a href="#order">AliExpress list</a>
           </Button>
         </nav>
       </header>
@@ -55,7 +56,7 @@ export default function HomePage() {
               <a href="#from-meter">Read it from the meter</a>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <a href="#paths">Utility / portal notes</a>
+              <a href="#order">Order the parts</a>
             </Button>
           </div>
         </div>
@@ -63,6 +64,7 @@ export default function HomePage() {
 
       <div className="relative mx-auto w-full max-w-6xl space-y-24 px-5 pb-24 sm:px-8">
         <FromTheMeter />
+        <AliExpressCart />
         <AccessPaths />
         <MeterDashboard />
 
