@@ -36,7 +36,12 @@ export async function GET(request: Request) {
     }
 
     const tokens = await ensureFreshTokens(existing);
-    const data = await fetchDailyReadings(tokens, 2);
+    // Default to current month only — IEC RemoteReadingRange is slow; extra months via ?months=2
+    const monthsParam = Number(url.searchParams.get("months") ?? "1");
+    const monthsBack = Number.isFinite(monthsParam)
+      ? Math.min(3, Math.max(1, Math.floor(monthsParam)))
+      : 1;
+    const data = await fetchDailyReadings(tokens, monthsBack);
 
     const res = NextResponse.json({ ok: true, data });
     if (tokens !== existing) {
@@ -47,8 +52,9 @@ export async function GET(request: Request) {
     const status = err instanceof IecApiError ? err.status : 500;
     const message =
       err instanceof Error ? err.message : "Could not pull IEC readings";
+    const details = err instanceof IecApiError ? err.details : undefined;
     const res = NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: message, details },
       { status: status >= 400 && status < 600 ? status : 500 },
     );
     if (status === 401) {

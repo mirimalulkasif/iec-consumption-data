@@ -21,6 +21,7 @@ export type IecDevice = {
   deviceType: number | null;
   deviceNumber: string;
   deviceCode: string;
+  meterKind?: string;
 };
 
 export type IecContract = {
@@ -28,6 +29,7 @@ export type IecContract = {
   address: string;
   cityName: string;
   smartMeter: boolean;
+  producerType?: number;
 };
 
 export type DailyRow = {

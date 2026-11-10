@@ -13,6 +13,7 @@ const IEC_API = "https://iecapi.iec.co.il/api";
 const OKTA = "https://iec-ext.okta.com";
 const CLIENT_ID = process.env.IEC_CLIENT_ID ?? "0oaqf6zr7yEcQZqqt2p7";
 const REDIRECT_URI = process.env.IEC_REDIRECT_URI ?? "com.iecrn:/";
+const FETCH_TIMEOUT_MS = 20_000;
 
 const BROWSER_HEADERS: Record<string, string> = {
   accept: "application/json, text/plain, */*",
@@ -27,10 +28,12 @@ const BROWSER_HEADERS: Record<string, string> = {
 
 export class IecApiError extends Error {
   status: number;
-  constructor(message: string, status = 400) {
+  details?: unknown;
+  constructor(message: string, status = 400, details?: unknown) {
     super(message);
     this.name = "IecApiError";
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -59,12 +62,46 @@ function factorLabel(factor: {
 }
 
 function pickFactor(
-  factors: Array<{ id: string; factorType?: string; profile?: { email?: string } }>,
+  factors: Array<{
+    id: string;
+    factorType?: string;
+    profile?: { email?: string };
+  }>,
   preferSms = true,
 ) {
-  if (!factors.length) throw new IecApiError("No IEC login factors found for this ID");
+  if (!factors.length) {
+    throw new IecApiError("No IEC login factors found for this ID");
+  }
   if (!preferSms) return factors[0];
   return factors.find((f) => factorLabel(f) === "sms") ?? factors[0];
+}
+
+/** IEC APIs expect unpadded numeric IDs (HA does str(int(...))). */
+function normalizeNumericId(value: string | number) {
+  const digits = String(value).replace(/\D/g, "");
+  if (!digits) return String(value);
+  // Keep as decimal string without leading zeros, but never empty
+  const normalized = digits.replace(/^0+(?=\d)/, "");
+  return normalized || "0";
+}
+
+async function iecFetch(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new IecApiError(`IEC request timed out after ${timeoutMs / 1000}s`, 504);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function readJson(res: Response) {
@@ -82,8 +119,13 @@ async function readJson(res: Response) {
       "errorSummary" in body &&
       typeof (body as { errorSummary?: string }).errorSummary === "string"
         ? (body as { errorSummary: string }).errorSummary
-        : `IEC request failed (${res.status})`;
-    throw new IecApiError(summary, res.status);
+        : typeof body === "object" &&
+            body &&
+            "title" in body &&
+            typeof (body as { title?: string }).title === "string"
+          ? (body as { title: string }).title
+          : `IEC request failed (${res.status})`;
+    throw new IecApiError(summary, res.status, body);
   }
   return body;
 }
@@ -105,7 +147,7 @@ export async function startLogin(
     throw new IecApiError("Enter a valid Israeli ID number");
   }
 
-  const authn = await fetch(`${OKTA}/api/v1/authn`, {
+  const authn = await iecFetch(`${OKTA}/api/v1/authn`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -117,7 +159,11 @@ export async function startLogin(
     stateToken?: string;
     status?: string;
     _embedded?: {
-      factors?: Array<{ id: string; factorType?: string; profile?: { email?: string } }>;
+      factors?: Array<{
+        id: string;
+        factorType?: string;
+        profile?: { email?: string };
+      }>;
     };
   };
 
@@ -130,7 +176,7 @@ export async function startLogin(
   }
 
   const factor = pickFactor(factors, preferSms);
-  const verify = await fetch(
+  const verify = await iecFetch(
     `${OKTA}/api/v1/authn/factors/${factor.id}/verify`,
     {
       method: "POST",
@@ -170,10 +216,11 @@ async function authorizeSession(sessionToken: string) {
       code_challenge: challenge,
     }).toString();
 
-  const res = await fetch(url, {
-    headers: { accept: "text/html,application/xhtml+xml" },
-    redirect: "manual",
-  });
+  const res = await iecFetch(
+    url,
+    { headers: { accept: "text/html,application/xhtml+xml" }, redirect: "manual" },
+    25_000,
+  );
   const html = await res.text();
   const decoded = Buffer.from(html, "latin1").toString("utf8");
   const match = decoded.match(
@@ -193,7 +240,7 @@ async function exchangeCode(code: string, verifier: string): Promise<IecTokens> 
     redirect_uri: REDIRECT_URI,
     code,
   });
-  const res = await fetch(`${OKTA}/oauth2/default/v1/token`, {
+  const res = await iecFetch(`${OKTA}/oauth2/default/v1/token`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -227,7 +274,7 @@ export async function verifyOtp(
   const code = otpCode.replace(/\D/g, "");
   if (code.length < 4) throw new IecApiError("Enter the OTP code from SMS/email");
 
-  const verify = await fetch(
+  const verify = await iecFetch(
     `${OKTA}/api/v1/authn/factors/${pending.factorId}/verify`,
     {
       method: "POST",
@@ -261,7 +308,7 @@ export async function refreshTokens(tokens: IecTokens): Promise<IecTokens> {
     grant_type: "refresh_token",
     scope: "openid email profile offline_access",
   });
-  const res = await fetch(`${OKTA}/oauth2/default/v1/token`, {
+  const res = await iecFetch(`${OKTA}/oauth2/default/v1/token`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -296,7 +343,7 @@ export async function ensureFreshTokens(tokens: IecTokens): Promise<IecTokens> {
 }
 
 async function getCustomer(idToken: string) {
-  const res = await fetch(`${IEC_API}/customer`, {
+  const res = await iecFetch(`${IEC_API}/customer`, {
     headers: authHeaders(idToken),
   });
   return (await readJson(res)) as {
@@ -307,30 +354,69 @@ async function getCustomer(idToken: string) {
   };
 }
 
-async function getContracts(idToken: string, bpNumber: string): Promise<IecContract[]> {
-  const res = await fetch(`${IEC_API}/customer/contract/${bpNumber}`, {
-    headers: authHeaders(idToken),
-  });
+async function getContracts(
+  idToken: string,
+  bpNumber: string,
+): Promise<IecContract[]> {
+  const res = await iecFetch(
+    `${IEC_API}/customer/contract/${normalizeNumericId(bpNumber)}`,
+    { headers: authHeaders(idToken) },
+  );
   const json = (await readJson(res)) as {
     data?: {
       contracts?: Array<{
-        contractId: string;
+        contractId: string | number;
         address?: string;
         cityName?: string;
         smartMeter?: boolean;
+        producerType?: number;
       }>;
     };
+    reponseDescriptor?: { isSuccess?: boolean; description?: string };
   };
   return (json.data?.contracts ?? []).map((c) => ({
-    contractId: String(c.contractId),
+    contractId: normalizeNumericId(c.contractId),
     address: c.address ?? "",
     cityName: c.cityName ?? "",
     smartMeter: Boolean(c.smartMeter),
+    producerType: c.producerType ?? 0,
   }));
 }
 
-async function getDevices(idToken: string, contractId: string): Promise<IecDevice[]> {
-  const res = await fetch(`${IEC_API}/Device/${contractId}`, {
+async function getDevicesFromDeviceIn(
+  idToken: string,
+  contractId: string,
+): Promise<IecDevice[]> {
+  const res = await iecFetch(`${IEC_API}/DeviceIn/${contractId}`, {
+    headers: authHeaders(idToken),
+  });
+  const json = (await readJson(res)) as {
+    status?: number;
+    devices?: Array<{
+      isActive?: boolean;
+      deviceType?: number;
+      deviceNumber?: string;
+      deviceCode?: string | number;
+      meterKind?: string;
+    }>;
+  };
+  return (json.devices ?? [])
+    .filter((d) => d.deviceNumber && d.deviceCode != null && d.deviceCode !== "")
+    .map((d) => ({
+      isActive: Boolean(d.isActive),
+      deviceType: d.deviceType ?? null,
+      deviceNumber: String(d.deviceNumber),
+      deviceCode: String(d.deviceCode),
+      meterKind: d.meterKind || "Consumption",
+    }));
+}
+
+async function getDevicesFallback(
+  idToken: string,
+  contractId: string,
+  meterKind: string,
+): Promise<IecDevice[]> {
+  const res = await iecFetch(`${IEC_API}/Device/${contractId}`, {
     headers: authHeaders(idToken),
   });
   const json = (await readJson(res)) as Array<{
@@ -339,76 +425,156 @@ async function getDevices(idToken: string, contractId: string): Promise<IecDevic
     deviceNumber?: string;
     deviceCode?: string | number;
   }>;
-  return (Array.isArray(json) ? json : []).map((d) => ({
-    isActive: Boolean(d.isActive),
-    deviceType: d.deviceType ?? null,
-    deviceNumber: String(d.deviceNumber ?? ""),
-    deviceCode: String(d.deviceCode ?? ""),
-  }));
+  return (Array.isArray(json) ? json : [])
+    .filter((d) => d.deviceNumber && d.deviceCode != null && d.deviceCode !== "")
+    .map((d) => ({
+      isActive: Boolean(d.isActive),
+      deviceType: d.deviceType ?? null,
+      deviceNumber: String(d.deviceNumber),
+      deviceCode: String(d.deviceCode),
+      meterKind,
+    }));
 }
 
-function ymd(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+async function getLastInvoiceDate(
+  idToken: string,
+  bpNumber: string,
+  contractId: string,
+): Promise<string | null> {
+  try {
+    const res = await iecFetch(
+      `${IEC_API}/BillingCollection/invoices/${normalizeNumericId(bpNumber)}/${contractId}`,
+      { headers: authHeaders(idToken) },
+    );
+    const json = (await readJson(res)) as {
+      data?: {
+        invoices?: Array<{
+          documentID?: string;
+          fullDate?: string;
+          toDate?: string;
+          fromDate?: string;
+        }>;
+      };
+    };
+    const invoices = json.data?.invoices ?? [];
+    // Prefer electric invoices (documentID "1"), else newest with a date
+    const electric = invoices.filter((i) => String(i.documentID) === "1");
+    const pool = electric.length ? electric : invoices;
+    let best: string | null = null;
+    for (const inv of pool) {
+      const raw = inv.toDate || inv.fullDate || inv.fromDate;
+      if (!raw) continue;
+      const day = raw.slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      if (!best || day > best) best = day;
+    }
+    return best;
+  } catch {
+    return null;
+  }
 }
 
-function firstOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+function mapMeterKind(raw: string | undefined, producerType: number) {
+  if (producerType === 1) return "Backstream";
+  const value = (raw ?? "Consumption").trim();
+  if (!value) return "Consumption";
+  if (/^\d+$/.test(value)) return Number(value) === 2 ? "Backstream" : "Consumption";
+  const lower = value.toLowerCase();
+  if (value === "צריכה" || lower === "consumption") return "Consumption";
+  if (value.includes("דו") || lower === "backstream") return "Backstream";
+  return "Consumption";
 }
 
-function addMonths(date: Date, delta: number) {
-  return new Date(date.getFullYear(), date.getMonth() + delta, 1);
+function jerusalemYmd(date = new Date()) {
+  // en-CA → YYYY-MM-DD in Asia/Jerusalem
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function firstOfMonthJerusalem(monthsAgo = 0) {
+  const today = jerusalemYmd();
+  const [y, m] = today.split("-").map(Number);
+  const totalMonths = y * 12 + (m - 1) - monthsAgo;
+  const year = Math.floor(totalMonths / 12);
+  const month = (totalMonths % 12) + 1;
+  return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
 function toDayKey(interval: string) {
-  // IEC returns ISO like 2023-07-20T00:00:00+00:00 — keep calendar date as IEC sent it
   const m = interval.match(/^(\d{4}-\d{2}-\d{2})/);
   return m?.[1] ?? null;
 }
+
+type RemoteReadingResponse = {
+  reportStatus?: number;
+  reportStatusText?: string;
+  meterList?: Array<{
+    meterSerial?: string;
+    meterCode?: string;
+    periodConsumptions?: Array<{
+      interval: string;
+      consumption: number;
+      status?: number;
+    }>;
+    totalConsumptionForPeriod?: number;
+  }>;
+};
 
 async function remoteReadingRange(opts: {
   idToken: string;
   contractId: string;
   meterSerial: string;
   meterCode: string;
+  meterKind: string;
   fromDate: string;
+  lastInvoiceDate: string;
   resolution: number;
-}) {
-  const res = await fetch(
+}): Promise<RemoteReadingResponse> {
+  const res = await iecFetch(
     `${IEC_API}/Consumption/RemoteReadingRange/${opts.contractId}`,
     {
       method: "POST",
       headers: authHeaders(opts.idToken),
       body: JSON.stringify({
         contractNumber: opts.contractId,
-        lastInvoiceDate: "2000-01-01",
+        // HA: lastInvoiceDate defaults to fromDate — never a synthetic 2000-01-01
+        lastInvoiceDate: opts.lastInvoiceDate,
         fromDate: opts.fromDate,
         resolution: opts.resolution,
         smartMetersList: [
           {
-            meterKind: "Consumption",
-            meterCode: opts.meterCode,
-            meterSerial: opts.meterSerial,
+            meterKind: opts.meterKind,
+            meterCode: String(opts.meterCode),
+            meterSerial: String(opts.meterSerial),
           },
         ],
       }),
     },
+    // IEC often takes 20–40s on RemoteReadingRange; abort before the ~60s gateway cut
+    50_000,
   );
-  return (await readJson(res)) as {
-    reportStatus?: number;
-    reportStatusText?: string;
-    meterList?: Array<{
-      meterSerial?: string;
-      periodConsumptions?: Array<{
-        interval: string;
-        consumption: number;
-        status?: number;
-      }>;
-      totalConsumptionForPeriod?: number;
-    }>;
-  };
+  return (await readJson(res)) as RemoteReadingResponse;
+}
+
+function ingestPeriods(
+  byDay: Map<string, number>,
+  reading: RemoteReadingResponse,
+) {
+  let count = 0;
+  for (const meter of reading.meterList ?? []) {
+    for (const period of meter.periodConsumptions ?? []) {
+      const day = toDayKey(period.interval);
+      if (!day) continue;
+      // MONTHLY → one row per day. DAILY → many intervals per day; sum them.
+      byDay.set(day, (byDay.get(day) ?? 0) + Number(period.consumption ?? 0));
+      count += 1;
+    }
+  }
+  return count;
 }
 
 export async function fetchDailyReadings(
@@ -416,22 +582,42 @@ export async function fetchDailyReadings(
   monthsBack = 2,
 ): Promise<ReadingsResult> {
   const customer = await getCustomer(tokens.idToken);
-  const contracts = await getContracts(tokens.idToken, customer.bpNumber);
+  const bpNumber = normalizeNumericId(customer.bpNumber);
+  const contracts = await getContracts(tokens.idToken, bpNumber);
   if (!contracts.length) {
     throw new IecApiError("No IEC contracts found on this account");
   }
 
-  const contract =
-    contracts.find((c) => c.smartMeter) ?? contracts[0];
+  const contract = contracts.find((c) => c.smartMeter) ?? contracts[0];
+  const contractId = normalizeNumericId(contract.contractId);
 
-  const devices = await getDevices(tokens.idToken, contract.contractId);
+  let devices: IecDevice[] = [];
+  try {
+    devices = await getDevicesFromDeviceIn(tokens.idToken, contractId);
+  } catch {
+    devices = [];
+  }
+  if (!devices.length) {
+    devices = await getDevicesFallback(
+      tokens.idToken,
+      contractId,
+      mapMeterKind(undefined, contract.producerType ?? 0),
+    );
+  }
+
   const device =
-    devices.find((d) => d.isActive && d.deviceNumber) ?? devices[0];
-  if (!device?.deviceNumber) {
+    devices.find((d) => d.isActive && d.deviceNumber && d.deviceCode) ??
+    devices[0];
+  if (!device?.deviceNumber || !device.deviceCode) {
     throw new IecApiError(
       "No smart meter device found on this contract. Remote reading needs an electronic meter.",
     );
   }
+
+  const meterKind = mapMeterKind(
+    device.meterKind,
+    contract.producerType ?? 0,
+  );
 
   const warnings: string[] = [];
   if (!contract.smartMeter) {
@@ -440,42 +626,91 @@ export async function fetchDailyReadings(
     );
   }
 
+  const invoiceDate = await getLastInvoiceDate(
+    tokens.idToken,
+    bpNumber,
+    contractId,
+  );
+
   const byDay = new Map<string, number>();
-  const today = new Date();
-  const monthStarts: Date[] = [];
+  const monthStarts: string[] = [];
   for (let i = monthsBack - 1; i >= 0; i--) {
-    monthStarts.push(firstOfMonth(addMonths(today, -i)));
+    monthStarts.push(firstOfMonthJerusalem(i));
   }
 
-  for (const start of monthStarts) {
-    const fromDate = ymd(start);
-    try {
+  // Fetch months in parallel (wall clock ≈ one slow IEC call, not N×)
+  const results = await Promise.allSettled(
+    monthStarts.map(async (fromDate) => {
+      const lastInvoiceDate = invoiceDate ?? fromDate;
       const reading = await remoteReadingRange({
         idToken: tokens.idToken,
-        contractId: contract.contractId,
+        contractId,
         meterSerial: device.deviceNumber,
-        meterCode: device.deviceCode || "503",
+        meterCode: device.deviceCode,
+        meterKind,
         fromDate,
-        // MONTHLY resolution returns one periodConsumption per day
+        lastInvoiceDate,
         resolution: ReadingResolution.MONTHLY,
       });
 
-      const meters = reading.meterList ?? [];
-      if (!meters.length) {
-        warnings.push(`No remote reading returned for ${fromDate}`);
-        continue;
+      if (!(reading.meterList ?? []).length) {
+        throw new Error(
+          reading.reportStatusText ||
+            `No meterList for ${fromDate} (status ${reading.reportStatus ?? "?"})`,
+        );
       }
-      for (const meter of meters) {
-        for (const period of meter.periodConsumptions ?? []) {
-          const day = toDayKey(period.interval);
-          if (!day) continue;
-          const prev = byDay.get(day) ?? 0;
-          byDay.set(day, prev + Number(period.consumption ?? 0));
-        }
+
+      const partial = new Map<string, number>();
+      const count = ingestPeriods(partial, reading);
+      if (!count) {
+        throw new Error(`Empty periodConsumptions for ${fromDate}`);
+      }
+      return partial;
+    }),
+  );
+
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      for (const [date, kwh] of result.value) {
+        byDay.set(date, (byDay.get(date) ?? 0) + kwh);
+      }
+    } else {
+      const reason =
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason);
+      warnings.push(`${monthStarts[index]}: ${reason}`);
+    }
+  });
+
+  // Fallback: if MONTHLY came back empty, try DAILY for today (HA does this too)
+  if (!byDay.size) {
+    const today = jerusalemYmd();
+    try {
+      const daily = await remoteReadingRange({
+        idToken: tokens.idToken,
+        contractId,
+        meterSerial: device.deviceNumber,
+        meterCode: device.deviceCode,
+        meterKind,
+        fromDate: today,
+        lastInvoiceDate: invoiceDate ?? today,
+        resolution: ReadingResolution.DAILY,
+      });
+      const count = ingestPeriods(byDay, daily);
+      if (count) {
+        warnings.push(
+          "Monthly remote reading was empty; showing today’s DAILY intervals summed to kWh.",
+        );
+      } else {
+        warnings.push(
+          `Daily fallback for ${today} also returned no periodConsumptions.`,
+        );
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Remote reading failed";
-      warnings.push(`${fromDate}: ${msg}`);
+      warnings.push(
+        `Daily fallback: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -488,8 +723,13 @@ export async function fetchDailyReadings(
 
   if (!days.length) {
     throw new IecApiError(
-      warnings[0] ??
-        "IEC returned no daily readings. Smart-meter data often lags by ~1–2 days.",
+      [
+        "IEC returned no daily readings.",
+        `contract ${contractId}, meter ${device.deviceNumber}/${device.deviceCode}, kind ${meterKind}.`,
+        warnings[0] ?? "Smart-meter data often lags by ~1–2 days.",
+      ].join(" "),
+      400,
+      { warnings, contractId, meter: device, meterKind, invoiceDate },
     );
   }
 
@@ -501,7 +741,7 @@ export async function fetchDailyReadings(
     totalKwh,
     dateFrom: days[0].date,
     dateTo: days[days.length - 1].date,
-    contractId: contract.contractId,
+    contractId,
     meterSerial: device.deviceNumber,
     customerName:
       [customer.firstName, customer.lastName].filter(Boolean).join(" ") ||

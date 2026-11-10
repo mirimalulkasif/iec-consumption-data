@@ -55,13 +55,15 @@ export function DailyDashboard() {
     [recent],
   );
 
-  async function pullReadings(demo = false) {
+  async function pullReadings(demo = false, months = 1) {
     setBusy(true);
     setError(null);
     setStep("loading");
     try {
       const res = await fetch(
-        demo ? "/api/iec/readings?demo=1" : "/api/iec/readings",
+        demo
+          ? "/api/iec/readings?demo=1"
+          : `/api/iec/readings?months=${months}`,
         { cache: "no-store" },
       );
       const body = await readJson(res);
@@ -70,8 +72,35 @@ export function DailyDashboard() {
       setStep("data");
     } catch (err) {
       setResult(null);
-      setStep("id");
       setError(err instanceof Error ? err.message : "Could not pull readings");
+      // Stay signed-in if possible so Refresh works without a new OTP
+      try {
+        const sessionRes = await fetch("/api/iec/session", { cache: "no-store" });
+        const session = await readJson(sessionRes);
+        if (session.signedIn) {
+          setStep("data");
+          setResult({
+            days: [],
+            totalKwh: 0,
+            dateFrom: "",
+            dateTo: "",
+            contractId: "—",
+            meterSerial: "—",
+            customerName: "Signed in",
+            warnings: [
+              err instanceof Error ? err.message : "Could not pull readings",
+            ],
+            source: "iec",
+          });
+        } else if (session.awaitingOtp) {
+          setFactorType(session.factorType || "sms");
+          setStep("otp");
+        } else {
+          setStep("id");
+        }
+      } catch {
+        setStep("id");
+      }
     } finally {
       setBusy(false);
     }
@@ -259,8 +288,8 @@ export function DailyDashboard() {
 
         {step === "loading" && (
           <div className="rounded-2xl border border-[var(--line)] bg-white/85 px-5 py-8 text-[var(--mute)]">
-            Talking to iecapi.iec.co.il — loading contracts, meter, and daily
-            remote readings…
+            Talking to iecapi.iec.co.il — contracts, meter, then monthly remote
+            readings (usually under ~20s)…
           </div>
         )}
 
@@ -277,11 +306,21 @@ export function DailyDashboard() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void pullReadings(result.source === "mock")}
+                onClick={() => void pullReadings(result.source === "mock", 1)}
                 className="rounded-md bg-[var(--ink)] px-4 py-2 text-sm text-[var(--paper)] disabled:opacity-60"
               >
                 {busy ? "Refreshing…" : "Refresh from IEC"}
               </button>
+              {result.source !== "mock" && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void pullReadings(false, 2)}
+                  className="rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm text-[var(--ink)]"
+                >
+                  Load 2 months
+                </button>
+              )}
               {result.source !== "mock" && (
                 <button
                   type="button"
