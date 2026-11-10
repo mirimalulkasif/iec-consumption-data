@@ -39,14 +39,28 @@ export type DailyRow = {
 
 export type ReadingsResult = {
   days: DailyRow[];
+  /** Most recent day in the result (usually latest available from IEC). */
+  latest: DailyRow | null;
   totalKwh: number;
   dateFrom: string;
   dateTo: string;
+  /** Requested filter range (may be wider than days that IEC returned). */
+  requestedFrom: string | null;
+  requestedTo: string | null;
   contractId: string;
   meterSerial: string;
   customerName: string;
   warnings: string[];
   source: "iec" | "mock";
+};
+
+export type ReadingsQuery = {
+  /** Inclusive YYYY-MM-DD */
+  from?: string;
+  /** Inclusive YYYY-MM-DD */
+  to?: string;
+  /** Used when from/to are omitted — how many calendar months to pull. */
+  monthsBack?: number;
 };
 
 export const ReadingResolution = {

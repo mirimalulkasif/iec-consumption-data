@@ -6,6 +6,7 @@ import {
   type IecDevice,
   type IecTokens,
   type PendingLogin,
+  type ReadingsQuery,
   type ReadingsResult,
 } from "./types";
 
@@ -504,6 +505,29 @@ function firstOfMonthJerusalem(monthsAgo = 0) {
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
+function isYmd(value: string | undefined): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+}
+
+/** First-of-month strings covering every month from `from` through `to` (inclusive). */
+function monthStartsForRange(from: string, to: string) {
+  const start = from.slice(0, 7) + "-01";
+  const endMonth = to.slice(0, 7) + "-01";
+  const out: string[] = [];
+  let [y, m] = start.split("-").map(Number);
+  const [ey, em] = endMonth.split("-").map(Number);
+  while (y < ey || (y === ey && m <= em)) {
+    out.push(`${y}-${String(m).padStart(2, "0")}-01`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    if (out.length > 6) break; // hard cap — IEC calls are slow
+  }
+  return out;
+}
+
 function toDayKey(interval: string) {
   const m = interval.match(/^(\d{4}-\d{2}-\d{2})/);
   return m?.[1] ?? null;
@@ -579,8 +603,11 @@ function ingestPeriods(
 
 export async function fetchDailyReadings(
   tokens: IecTokens,
-  monthsBack = 2,
+  query: ReadingsQuery | number = 1,
 ): Promise<ReadingsResult> {
+  const opts: ReadingsQuery =
+    typeof query === "number" ? { monthsBack: query } : query;
+
   const customer = await getCustomer(tokens.idToken);
   const bpNumber = normalizeNumericId(customer.bpNumber);
   const contracts = await getContracts(tokens.idToken, bpNumber);
@@ -632,10 +659,31 @@ export async function fetchDailyReadings(
     contractId,
   );
 
+  const today = jerusalemYmd();
+  let rangeFrom = isYmd(opts.from) ? opts.from : null;
+  let rangeTo = isYmd(opts.to) ? opts.to : null;
+  if (rangeFrom && rangeTo && rangeFrom > rangeTo) {
+    const swap = rangeFrom;
+    rangeFrom = rangeTo;
+    rangeTo = swap;
+  }
+  if (rangeTo && rangeTo > today) rangeTo = today;
+
   const byDay = new Map<string, number>();
-  const monthStarts: string[] = [];
-  for (let i = monthsBack - 1; i >= 0; i--) {
-    monthStarts.push(firstOfMonthJerusalem(i));
+  let monthStarts: string[];
+  if (rangeFrom && rangeTo) {
+    monthStarts = monthStartsForRange(rangeFrom, rangeTo);
+    if (monthStarts.length >= 6) {
+      warnings.push(
+        "Period capped at 6 months per request — narrow the dates if you need a longer span.",
+      );
+    }
+  } else {
+    const monthsBack = Math.min(3, Math.max(1, opts.monthsBack ?? 1));
+    monthStarts = [];
+    for (let i = monthsBack - 1; i >= 0; i--) {
+      monthStarts.push(firstOfMonthJerusalem(i));
+    }
   }
 
   // Fetch months in parallel (wall clock ≈ one slow IEC call, not N×)
@@ -685,7 +733,6 @@ export async function fetchDailyReadings(
 
   // Fallback: if MONTHLY came back empty, try DAILY for today (HA does this too)
   if (!byDay.size) {
-    const today = jerusalemYmd();
     try {
       const daily = await remoteReadingRange({
         idToken: tokens.idToken,
@@ -714,17 +761,26 @@ export async function fetchDailyReadings(
     }
   }
 
-  const days: DailyRow[] = [...byDay.entries()]
+  let days: DailyRow[] = [...byDay.entries()]
     .map(([date, kwh]) => ({
       date,
       kwh: Math.round(kwh * 1000) / 1000,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  if (rangeFrom || rangeTo) {
+    days = days.filter((d) => {
+      if (rangeFrom && d.date < rangeFrom) return false;
+      if (rangeTo && d.date > rangeTo) return false;
+      return true;
+    });
+  }
+
   if (!days.length) {
     throw new IecApiError(
       [
-        "IEC returned no daily readings.",
+        "IEC returned no daily readings",
+        rangeFrom && rangeTo ? `for ${rangeFrom} → ${rangeTo}.` : ".",
         `contract ${contractId}, meter ${device.deviceNumber}/${device.deviceCode}, kind ${meterKind}.`,
         warnings[0] ?? "Smart-meter data often lags by ~1–2 days.",
       ].join(" "),
@@ -735,12 +791,16 @@ export async function fetchDailyReadings(
 
   const totalKwh =
     Math.round(days.reduce((sum, d) => sum + d.kwh, 0) * 1000) / 1000;
+  const latest = days[days.length - 1] ?? null;
 
   return {
     days,
+    latest,
     totalKwh,
     dateFrom: days[0].date,
     dateTo: days[days.length - 1].date,
+    requestedFrom: rangeFrom,
+    requestedTo: rangeTo,
     contractId,
     meterSerial: device.deviceNumber,
     customerName:

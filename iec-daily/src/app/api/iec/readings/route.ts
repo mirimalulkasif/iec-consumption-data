@@ -15,14 +15,27 @@ import {
 
 export const runtime = "nodejs";
 
+function parseYmdParam(value: string | null) {
+  if (!value) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const from = parseYmdParam(url.searchParams.get("from"));
+  const to = parseYmdParam(url.searchParams.get("to"));
   const wantMock =
-    url.searchParams.get("demo") === "1" ||
-    process.env.IEC_MOCK === "1";
+    url.searchParams.get("demo") === "1" || process.env.IEC_MOCK === "1";
+
+  const monthsParam = Number(url.searchParams.get("months") ?? "1");
+  const monthsBack = Number.isFinite(monthsParam)
+    ? Math.min(3, Math.max(1, Math.floor(monthsParam)))
+    : 1;
+
+  const query = from || to ? { from, to, monthsBack } : { monthsBack };
 
   if (wantMock) {
-    return NextResponse.json({ ok: true, data: mockReadings() });
+    return NextResponse.json({ ok: true, data: mockReadings(query) });
   }
 
   try {
@@ -36,12 +49,7 @@ export async function GET(request: Request) {
     }
 
     const tokens = await ensureFreshTokens(existing);
-    // Default to current month only — IEC RemoteReadingRange is slow; extra months via ?months=2
-    const monthsParam = Number(url.searchParams.get("months") ?? "1");
-    const monthsBack = Number.isFinite(monthsParam)
-      ? Math.min(3, Math.max(1, Math.floor(monthsParam)))
-      : 1;
-    const data = await fetchDailyReadings(tokens, monthsBack);
+    const data = await fetchDailyReadings(tokens, query);
 
     const res = NextResponse.json({ ok: true, data });
     if (tokens !== existing) {

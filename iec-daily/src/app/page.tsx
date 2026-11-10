@@ -23,8 +23,8 @@ export default function HomePage() {
           IEC Daily
         </h1>
         <p className="animate-rise-delay mt-5 max-w-xl text-lg text-[var(--mute)]">
-          Sign in with your Israeli ID and OTP. The plugin pulls daily kWh
-          straight from Israel Electric Corporation — no CSV downloads.
+          Sign in with your Israeli ID and OTP. See the latest daily kWh, then
+          pick any From / To period — pulled straight from IEC.
         </p>
       </section>
 
