@@ -2,7 +2,11 @@
 
 Guide for reading an **Arad** water meter in Israel when the water company has **not** enabled Read Your Meter Pro / CityMind web access.
 
-## Short answer
+## Electricity (חברת החשמל)
+
+If you have a smart meter and are billed by IEC, download the `meter_LP` CSV from the personal area and use the **Daily kWh** section in the app to turn 15‑minute rows into daily totals (parsed in-browser).
+
+## Short answer (Arad water)
 
 Yes — you can get data from the meter itself:
 
