@@ -1,5 +1,5 @@
 export type DailyRow = {
-  date: string; // YYYY-MM-DD
+  date: string;
   kwh: number;
   intervals: number;
 };
@@ -78,15 +78,14 @@ function findColumnIndexes(headers: string[]) {
   );
   let consIdx = normalized.findIndex(
     (h) =>
-      (h.includes("צריכה") && (h.includes("קוט") || h.includes("kwh") || h.includes("קוטש"))) ||
+      (h.includes("צריכה") &&
+        (h.includes("קוט") || h.includes("kwh") || h.includes("קוטש"))) ||
       h.includes("consumption") ||
       h === "kwh",
   );
   if (consIdx < 0) {
     consIdx = normalized.findIndex((h) => h.includes("צריכה"));
   }
-
-  // Fallback for headerless / oddly labeled files: look at first data-like row later
   return { dateIdx, timeIdx, consIdx };
 }
 
@@ -115,7 +114,6 @@ export function parseIecMeterCsv(text: string): IecParseResult {
     }
   }
 
-  // Old files sometimes have no Hebrew headers — detect by DD/MM/YYYY + time + number
   let start = headerLineIndex + 1;
   if (headerLineIndex < 0) {
     warnings.push(
@@ -124,12 +122,20 @@ export function parseIecMeterCsv(text: string): IecParseResult {
     start = 0;
     for (let i = 0; i < Math.min(lines.length, 40); i++) {
       const cells = splitCsvLine(lines[i]);
-      if (cells.length >= 3 && parseIsraeliDate(cells[0]) && parseNumber(cells[2]) !== null) {
+      if (
+        cells.length >= 3 &&
+        parseIsraeliDate(cells[0]) &&
+        parseNumber(cells[2]) !== null
+      ) {
         indexes = { dateIdx: 0, timeIdx: 1, consIdx: 2 };
         start = i;
         break;
       }
-      if (cells.length >= 5 && parseIsraeliDate(cells[2]) && parseNumber(cells[4]) !== null) {
+      if (
+        cells.length >= 5 &&
+        parseIsraeliDate(cells[2]) &&
+        parseNumber(cells[4]) !== null
+      ) {
         indexes = { dateIdx: 2, timeIdx: 3, consIdx: 4 };
         start = i;
         break;
@@ -208,5 +214,5 @@ export const iecDownloadSteps = [
   "Choose current consumption status (מצב צריכה עדכני).",
   "Request the Excel/CSV file emailed to you (קבלת קובץ… למייל).",
   "Save the meter_LP… attachment as-is — don’t open and re-save in Excel.",
-  "Upload it below. This page sums every 15‑minute row into daily kWh in your browser.",
+  "Upload it here. Daily kWh is summed in your browser from the 15‑minute rows.",
 ];

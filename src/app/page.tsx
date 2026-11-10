@@ -1,6 +1,5 @@
 import { AccessPaths } from "@/components/access-paths";
 import { AliExpressCart } from "@/components/aliexpress-cart";
-import { ElectricityDaily } from "@/components/electricity-daily";
 import { FromTheMeter } from "@/components/from-the-meter";
 import { MeterDashboard } from "@/components/meter-dashboard";
 import { Button } from "@/components/ui/button";
@@ -29,12 +28,12 @@ export default function HomePage() {
         <nav className="flex items-center gap-2 text-sm">
           <a
             className="hidden text-muted-foreground hover:text-foreground sm:inline"
-            href="#electricity"
+            href="#from-meter"
           >
-            Electricity
+            From the meter
           </a>
           <Button asChild size="sm" variant="secondary">
-            <a href="#electricity">Daily kWh</a>
+            <a href="#order">AliExpress list</a>
           </Button>
         </nav>
       </header>
@@ -64,7 +63,6 @@ export default function HomePage() {
       </section>
 
       <div className="relative mx-auto w-full max-w-6xl space-y-24 px-5 pb-24 sm:px-8">
-        <ElectricityDaily />
         <FromTheMeter />
         <AliExpressCart />
         <AccessPaths />
