@@ -63,14 +63,8 @@ npm install
 npm run dev -- --port 3851
 ```
 
-## Clone this repo
+## Source
 
-```bash
-curl -fsSL https://downloads.cursor.com/origin/install.sh | sh
-origin auth login
-origin repo clone miri-malul/iec-consumption-data
-```
-
-Repo: https://cursor.com/codebase/miri-malul/iec-consumption-data  
+GitHub (use this for HACS): https://github.com/mirimalulkasif/iec-consumption-data
 
 Not affiliated with חברת החשמל.
