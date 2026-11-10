@@ -9,7 +9,19 @@ No water-meter / Arad code. Daily kWh is pulled from IEC’s API (Okta ID + OTP)
 
 ## Home Assistant
 
-### Install
+### Install with HACS (GUI)
+
+1. HACS → **⋮** (top right) → **Custom repositories**
+2. Repository: `https://github.com/mirimalulkasif/iec-consumption-data`
+3. Type / category: **Integration** → **Add**
+4. HACS → **Integrations** → search **IEC Daily** → **Download**
+5. **Restart** Home Assistant
+6. Settings → **Devices & services** → **Add integration** → **IEC Daily**
+7. Enter Israeli ID → OTP
+
+If it still does not show after adding the custom repository, open **HACS → Integrations → ⋮ → Check for updates**, or restart HA once, then search again for **IEC Daily** (not “iec consumption”).
+
+### Manual install
 
 1. Copy `custom_components/iec_daily` into your HA  
    `config/custom_components/iec_daily`
