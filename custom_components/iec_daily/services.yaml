@@ -1,0 +1,32 @@
+set_period:
+  name: Set period
+  description: Choose the From/To dates used for period consumption on the IEC Daily widget.
+  fields:
+    from:
+      name: From
+      description: Start date (inclusive)
+      required: true
+      selector:
+        date:
+    to:
+      name: To
+      description: End date (inclusive)
+      required: true
+      selector:
+        date:
+    entry_id:
+      name: Config entry
+      description: Optional config entry id when multiple IEC Daily accounts exist
+      required: false
+      selector:
+        text:
+
+refresh:
+  name: Refresh
+  description: Pull fresh daily readings and bill prediction from IEC.
+  fields:
+    entry_id:
+      name: Config entry
+      required: false
+      selector:
+        text:

@@ -1,41 +1,82 @@
-# Arad Meter Access
+# IEC Daily
 
-Guide for reading an **Arad** water meter in Israel when the water company has **not** enabled Read Your Meter Pro / CityMind web access.
+Home Assistant custom integration + Lovelace widget for **Israel Electric Corporation** smart meters.
 
-Electricity smart-meter daily totals live in a **separate** app: [`iec-daily/`](./iec-daily).
+Pulls daily kWh from IEC’s API (same Okta ID + OTP flow as the official app). No CSV downloads.
 
-## Short answer
+## What you get
 
-Yes — you can get data from the meter itself:
+| Piece | What it does |
+| --- | --- |
+| **Latest daily consumption** sensor | Newest day IEC has published (often lags ~1–2 days) |
+| **Period consumption** sensor | Sum for a From/To range you choose |
+| **Predicted bill** sensor | Estimate for the current billing cycle (kWh tariff + delivery/distribution/KVA when available) |
+| **IEC Daily Lovelace card** | Widget: big latest-kWh hero, date period, bill prediction, recent days |
 
-1. **Read the dial** on the meter face (cumulative m³). No hardware, no approval.
-2. **Catch Dialog3G RF** packets the meter already broadcasts (~every 30s on **916.3 MHz** in Israel) with an RTL-SDR + `rtl_433`, or an ESP32 + SI4432/XL4432 (ESPHome). Filter on your printed serial so you only keep your meter.
+There is also a standalone web app under [`iec-daily/`](iec-daily/) if you want the same data outside Home Assistant.
 
-The utility website is optional. Blocking the portal does not stop the dial or the local radio transmission.
+## Install (Home Assistant)
 
-## Quick start
+### HACS (manual / custom repository)
+
+1. Copy `custom_components/iec_daily` into your HA `config/custom_components/` folder  
+   (or add this repo as a custom HACS integration when published).
+2. Restart Home Assistant.
+3. **Settings → Devices & services → Add integration → IEC Daily**
+4. Enter Israeli ID → OTP from SMS/email.
+5. Add the Lovelace card (see below).
+
+### Lovelace card
+
+The integration serves the card at `/iec_daily_static/iec-daily-card.js` and tries to register it automatically.
+
+If the card does not appear under **Add card → Custom**, add a resource:
+
+1. **Settings → Dashboards → ⋮ → Resources → Add resource**
+2. URL: `/iec_daily_static/iec-daily-card.js`
+3. Type: **JavaScript module**
+
+Card YAML:
+
+```yaml
+type: custom:iec-daily-card
+name: IEC Daily
+latest_entity: sensor.iec_daily_latest_daily_consumption
+period_entity: sensor.iec_daily_period_consumption
+bill_entity: sensor.iec_daily_predicted_bill
+```
+
+Entity IDs may include your contract number — pick them from **Developer tools → States**.
+
+## Services
+
+- `iec_daily.set_period` — `{ from: YYYY-MM-DD, to: YYYY-MM-DD }`
+- `iec_daily.refresh` — pull again from IEC
+
+## How it appears in HomeKit
+
+This integration creates **Home Assistant sensors**. They do **not** appear in Apple Home by themselves.
+
+To show them in HomeKit:
+
+1. Enable HA’s **HomeKit Bridge** (or HomeKit Device) integration  
+2. Include the IEC Daily sensors (energy / monetary) in the bridge expose list  
+3. In the Home app they show up as **sensors** (kWh / ₪), not as a native “electricity meter” accessory type  
+
+Predicted bill is a monetary sensor; latest/period are energy sensors.
+
+## Bill prediction note
+
+The predicted sum uses IEC’s `futureConsumption` when available, otherwise projects this month’s average daily use to month end, then applies the published kWh tariff plus available fixed tariffs. It is an **estimate**, not the official IEC invoice.
+
+## Web app (optional)
 
 ```bash
+cd iec-daily
 npm install
-npm run dev -- --port 3847
+npm run dev -- --port 3851
 ```
 
-Open [http://127.0.0.1:3847](http://127.0.0.1:3847).
+## License
 
-The page includes a **serial → hex** converter for decoder config, RF kit options, and an optional RYM Pro connect form (only useful if the utility later enables the portal).
-
-### Optional cloud secrets (only if portal works)
-
-```bash
-RYM_EMAIL=you@example.com
-RYM_PASSWORD=your-password
-```
-
-## Useful projects
-
-- [Dialog3g-Decoder](https://github.com/assafms/Dialog3g-Decoder) — ESPHome + SI4432/XL4432
-- [rtl_433 Arad Dialog3G](https://github.com/merbanan/rtl_433/pull/2984)
-
-## Stack
-
-Next.js, TypeScript, Tailwind CSS, shadcn/ui.
+Use at your own risk with your IEC account credentials. Not affiliated with חברת החשמל.

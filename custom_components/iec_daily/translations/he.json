@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "IEC Daily",
+        "description": "התחברות עם תעודת הזהות של בעל החשבון בחברת החשמל. יישלח קוד חד־פעמי ב-SMS או במייל.",
+        "data": {
+          "user_id": "תעודת זהות",
+          "prefer_sms": "העדף OTP ב-SMS"
+        }
+      },
+      "otp": {
+        "title": "קוד אימות",
+        "description": "הזינו את הקוד שנשלח ב-{factor}.",
+        "data": {
+          "otp": "קוד OTP"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "ההתחברות או הקוד נכשלו. בדקו ת״ז/קוד ונסו שוב.",
+      "cannot_connect": "לא ניתן להתחבר ל-IEC. נסו שוב מאוחר יותר."
+    },
+    "abort": {
+      "already_configured": "חשבון IEC זה כבר מוגדר."
+    }
+  }
+}

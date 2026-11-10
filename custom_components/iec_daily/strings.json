@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "IEC Daily",
+        "description": "Sign in with the Israel Electric Corporation account holder ID. An OTP will be sent by SMS (or email).",
+        "data": {
+          "user_id": "Israeli ID (תעודת זהות)",
+          "prefer_sms": "Prefer SMS OTP"
+        }
+      },
+      "otp": {
+        "title": "Enter OTP",
+        "description": "Enter the code IEC sent via {factor}.",
+        "data": {
+          "otp": "OTP code"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login or OTP failed. Check the ID / code and try again.",
+      "cannot_connect": "Could not reach IEC / Okta. Try again later."
+    },
+    "abort": {
+      "already_configured": "This IEC account is already configured."
+    }
+  }
+}

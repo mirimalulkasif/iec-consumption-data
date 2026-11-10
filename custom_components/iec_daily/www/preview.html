@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IEC Daily card preview</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #eceff1;
+        font-family: system-ui, sans-serif;
+        display: grid;
+        place-items: start center;
+        padding: 32px 16px;
+      }
+      .wrap {
+        width: min(440px, 100%);
+      }
+      h1 {
+        font-size: 1rem;
+        color: #455a64;
+        margin: 0 0 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Home Assistant widget preview (demo data)</h1>
+      <iec-daily-card id="card"></iec-daily-card>
+    </div>
+    <script type="module">
+      import "./iec-daily-card.js";
+
+      const days = [];
+      const end = new Date();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(end);
+        d.setDate(end.getDate() - i);
+        const ymd = d.toISOString().slice(0, 10);
+        const kwh = 11 + ((d.getDate() * 3) % 9) * 0.35 + (d.getDay() === 5 || d.getDay() === 6 ? 5 : 0);
+        days.push({ date: ymd, kwh: Math.round(kwh * 100) / 100 });
+      }
+      const latest = days[days.length - 1];
+      const total = Math.round(days.reduce((s, d) => s + d.kwh, 0) * 10) / 10;
+
+      const card = document.getElementById("card");
+      card.setConfig({
+        type: "custom:iec-daily-card",
+        name: "IEC Daily",
+        latest_entity: "sensor.iec_daily_latest_daily_consumption",
+        period_entity: "sensor.iec_daily_period_consumption",
+        bill_entity: "sensor.iec_daily_predicted_bill",
+      });
+      card.hass = {
+        states: {
+          "sensor.iec_daily_latest_daily_consumption": {
+            state: String(latest.kwh),
+            attributes: { day: latest.date },
+          },
+          "sensor.iec_daily_period_consumption": {
+            state: String(total),
+            attributes: {
+              period_from: days[0].date,
+              period_to: latest.date,
+              days_count: days.length,
+              days,
+            },
+          },
+          "sensor.iec_daily_predicted_bill": {
+            state: "412.5",
+            attributes: {
+              projected_kwh: 318.4,
+              method: "future_consumption",
+            },
+          },
+        },
+        callService: async (domain, service, data) => {
+          console.log(domain, service, data);
+          alert(`${domain}.${service}\\n${JSON.stringify(data, null, 2)}`);
+        },
+      };
+    </script>
+  </body>
+</html>
