@@ -4,7 +4,7 @@ Standalone plugin for **Israel Electric Corporation** smart-meter customers.
 
 Sign in with Israeli ID + OTP (same Okta flow as the IEC app). The app pulls **daily kWh** from IEC’s `RemoteReadingRange` API — you do not download or upload a CSV.
 
-Separate from the Arad water-meter app.
+Part of the **iec-consumption-data** repo (with the Home Assistant `iec_daily` integration).
 
 ## Run
 
