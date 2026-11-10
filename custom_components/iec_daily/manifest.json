@@ -8,5 +8,5 @@
   "issue_tracker": "https://github.com/mirimalulkasif/iec-consumption-data/issues",
   "loggers": ["iec_api", "custom_components.iec_daily"],
   "requirements": ["iec-api==0.5.17"],
-  "version": "1.0.1"
+  "version": "1.0.2"
 }
