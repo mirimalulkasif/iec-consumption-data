@@ -15,7 +15,7 @@ const body = Manrope({
 export const metadata: Metadata = {
   title: "IEC Daily",
   description:
-    "Turn your Israel Electric Corporation meter_LP smart-meter CSV into daily kWh totals. Parsed in your browser.",
+    "Pull daily kWh from Israel Electric Corporation via their API — ID + OTP login, no CSV download.",
 };
 
 export default function RootLayout({
